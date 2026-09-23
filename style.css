@@ -5,3 +5,29 @@
 
 .stage.is-finished{min-height:640px}.finish{overflow-y:auto}.finish>*{flex-shrink:0}
 .stage{width:100%}.stage.is-finished{aspect-ratio:auto;height:640px}
+
+/* Keep phone controls above browser chrome; reserve the small viewport and home-indicator area. */
+@media(max-width:760px){
+  .layout{padding-top:max(10px,env(safe-area-inset-top));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  .stage{aspect-ratio:auto;height:min(calc((100vw - 30px)*760/480),max(350px,calc(100svh - 225px - env(safe-area-inset-bottom))))}
+  .controls{margin-top:8px;padding:0 4px;gap:8px}
+  .controls button{height:48px;width:clamp(72px,23vw,96px)}
+  .controls span{font-size:10px;white-space:nowrap}
+  .game-footnote{margin-top:9px}
+  .stage.is-finished{height:560px;height:max(470px,min(560px,calc(100svh - 125px - env(safe-area-inset-bottom))));min-height:0}
+  .finish{justify-content:flex-start;padding:20px 22px 24px;scroll-padding-bottom:24px}
+  .finish-moon{display:none}
+  .finish .eyebrow{margin-bottom:10px}
+  .finish h2{font-size:23px;line-height:1.4}
+  .finish .rank{margin:9px 0 6px;padding:6px 15px}
+  .finish .result{padding:9px 0}
+  .finish .result strong{font-size:32px;margin-top:5px}
+  .finish .best{margin:0 0 10px}
+  .finish .result-actions{order:1}
+  .finish .button{padding:13px 15px;min-height:46px}
+  .finish .minor-actions{gap:20px}
+  .finish .minor-actions button{min-height:44px;padding:12px 10px;font-size:12px}
+  .finish .blessing{order:2;margin:8px 0 4px;font-size:10px}
+  .finish .result-logo{order:3;width:74px;margin:5px 0 0}
+  .footer{padding-bottom:calc(32px + env(safe-area-inset-bottom))}
+}
