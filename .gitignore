@@ -3,3 +3,5 @@ docs/fal-*.json
 docs/hero-original.png
 artifacts/
 .DS_Store
+docs/notion-*.json
+docs/fal-submit.py
