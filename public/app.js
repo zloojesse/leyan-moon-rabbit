@@ -7,15 +7,45 @@ const hero=$('hero'),logo=new Image();logo.src='./assets/logo.png';
 const C=MoonCollection;let collection=[],collectionPersistent=true,currentReward=null,selectedRecord=null;
 try{const saved=C.load(localStorage);collection=saved.records;collectionPersistent=saved.persistent;}catch{collectionPersistent=false;}
 const cardImages=new Map();
+let finishCardURL=null,finishPreviewVersion=0;
 
 const stars=Array.from({length:48},(_,i)=>({x:(i*127.31)%W,y:(i*79.77)%480,r:i%5===0?1.8:.8}));
 function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2600);}
 function visible(id,yes){$(id).hidden=!yes;}
-function begin(){$('stage').classList.remove('is-finished');E.start(state);visualLane=1;particles=[];cardBlob=null;if(cardURL){URL.revokeObjectURL(cardURL);cardURL=null;}['start-screen','finish-screen','pause-screen'].forEach(id=>visible(id,false));['hud','tools','controls','journey'].forEach(id=>visible(id,true));$('footnote').textContent='左右切換跑道 · 碰到隕石只減速，不會出局';$('pause').focus({preventScroll:true});}
+function begin(){clearFinishPreview();$('stage').classList.remove('is-finished');E.start(state);visualLane=1;particles=[];cardBlob=null;if(cardURL){URL.revokeObjectURL(cardURL);cardURL=null;}['start-screen','finish-screen','pause-screen'].forEach(id=>visible(id,false));['hud','tools','controls','journey'].forEach(id=>visible(id,true));$('footnote').textContent='左右切換跑道 · 碰到隕石只減速，不會出局';$('pause').focus({preventScroll:true});}
 function pause(){if(state.mode!=='playing')return;state.mode='paused';visible('pause-screen',true);$('resume').focus({preventScroll:true});}
 function resume(){if(state.mode!=='paused')return;state.mode='playing';visible('pause-screen',false);prev=performance.now();$('pause').focus({preventScroll:true});}
 function bestScore(){try{return Number(localStorage.getItem('leyan-moon-best-v1'))||0;}catch{return 0;}}
-function finish(){unlockCard();$('stage').classList.add('is-finished');['hud','tools','controls','journey','power'].forEach(id=>visible(id,false));visible('finish-screen',true);$('rank').textContent=E.rank(state.score);$('final-cakes').replaceChildren(document.createTextNode(state.cakes));const unit=document.createElement('small');unit.textContent='枚';$('final-cakes').append(unit);$('final-score').textContent=state.score;const best=Math.max(state.score,bestScore());try{localStorage.setItem('leyan-moon-best-v1',best);}catch{}$('best').textContent=`這台裝置的最高紀錄 ${best.toLocaleString()} 分`;$('footnote').textContent='把你的中秋祝福，分享給重要的人。';$('download').textContent='↓ 下載這款圖卡';$('download').focus({preventScroll:true});beep(784,.15);setTimeout(()=>beep(1046,.22),170);}
+function finish(){
+ unlockCard();$('stage').classList.add('is-finished');
+ ['hud','tools','controls','journey','power'].forEach(id=>visible(id,false));visible('finish-screen',true);
+ const best=Math.max(state.score,bestScore());try{localStorage.setItem('leyan-moon-best-v1',best);}catch{}
+ $('footnote').textContent='把你的中秋祝福，分享給重要的人。';$('download').textContent='↓ 下載這款圖卡';
+ $('finish-title').focus({preventScroll:true});renderFinishCard(currentReward.record);
+ beep(784,.15);setTimeout(()=>beep(1046,.22),170);
+}
+function clearFinishPreview(){
+ finishPreviewVersion++;visible('finish-card-image',false);$('finish-card-image').removeAttribute('src');
+ if(finishCardURL){URL.revokeObjectURL(finishCardURL);finishCardURL=null;}
+}
+async function renderFinishCard(record){
+ clearFinishPreview();const version=finishPreviewVersion;
+ $('finish-card').disabled=true;$('finish-card').setAttribute('aria-busy','true');
+ $('finish-card-status').textContent='月兔正在送上你的圖卡…';visible('finish-card-status',true);
+ try{
+  const blob=await createCard(record);if(version!==finishPreviewVersion)return;
+  finishCardURL=URL.createObjectURL(blob);const img=$('finish-card-image');img.src=finishCardURL;
+  img.alt=`${currentReward.card.name}｜${record.score} 分｜樂衍敬祝中秋快樂`;
+  await img.decode();if(version!==finishPreviewVersion)return;
+  visible('finish-card-image',true);visible('finish-card-status',false);
+  $('finish-card').setAttribute('aria-label',`放大查看 ${currentReward.card.name} 圖卡`);
+ }catch{
+  if(version!==finishPreviewVersion)return;
+  $('finish-card-status').textContent='圖卡暫時未載入，點這裡再試一次。收藏已保留。';
+ }finally{if(version===finishPreviewVersion){$('finish-card').disabled=false;$('finish-card').setAttribute('aria-busy','false');}}
+}
+$('finish-card').onclick=()=>{if(!currentReward)return;if($('finish-card-image').hidden)renderFinishCard(currentReward.record);else showCard(currentReward.record,false);};
+
 function beep(freq,duration=.09){if(!sound||!audio)return;try{const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}}
 function round(c,x,y,w,h,r,fill){c.fillStyle=fill;c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
 function ellipse(c,x,y,rx,ry,color){c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill();}
