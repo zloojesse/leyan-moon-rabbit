@@ -4,3 +4,4 @@
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 .stage.is-finished{min-height:640px}.finish{overflow-y:auto}.finish>*{flex-shrink:0}
+.stage{width:100%}.stage.is-finished{aspect-ratio:auto;height:640px}
