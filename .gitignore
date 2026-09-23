@@ -1,0 +1,5 @@
+node_modules/
+docs/fal-*.json
+docs/hero-original.png
+artifacts/
+.DS_Store
