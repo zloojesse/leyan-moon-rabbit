@@ -31,3 +31,13 @@
   .finish .result-logo{order:3;width:74px;margin:5px 0 0}
   .footer{padding-bottom:calc(32px + env(safe-area-inset-bottom))}
 }
+/* Six-card collection. No locked-card downloads or account requirement. */
+.start-links{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}.start-links .text-button{font-size:11px;white-space:nowrap}.collect-hint{font-size:9px;color:var(--mocha);margin:8px 0 0;text-align:center}.unlock-info{font-size:11px;color:var(--green);background:#e5ecdf;padding:8px 12px;border-radius:9px;text-align:center;margin:4px 0 10px}.finish .minor-actions{gap:5px;justify-content:space-between}.finish .minor-actions button{font-size:10px;padding:10px 5px;white-space:nowrap}#album-dialog{max-width:510px}#album-dialog .eyebrow{display:block;margin-bottom:10px}#album-progress{color:var(--green);line-height:1.6}.album-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}.album-tile{display:flex;align-items:stretch;flex-direction:column;background:#f1e9dd;border:1px solid #d5c7b3;border-radius:13px;padding:0;overflow:hidden;color:var(--ink);text-align:left}.album-tile img,.locked-art{width:100%;aspect-ratio:1;object-fit:cover}.album-tile strong{font-size:12px;margin:10px 9px 5px;color:var(--green)}.album-tile small{font-size:10px;margin:0 9px 12px;color:var(--mocha)}.album-tile.locked{opacity:1;cursor:default}.locked-art{display:grid;place-items:center;font:60px Georgia;color:#c3b394;background:radial-gradient(circle,#eee3ce,#f5eee3)}.album-tile.locked strong{color:#8a7c69}.album-rule,#album-note{line-height:1.7;font-size:11px}.card-error{line-height:1.8;background:#eee4d5;border-radius:10px;padding:16px}.finish:has(.unlock-info:not(:empty)){justify-content:flex-start}.finish:has(.unlock-info:not(:empty)) .finish-moon{display:none}
+@media(max-width:760px){.start-links .text-button{font-size:10px}.finish .unlock-info{padding:6px 8px;font-size:10px;margin:0 0 7px}.finish .minor-actions button{font-size:10px;padding:10px 3px}.finish .blessing{font-size:10px}.collect-hint{font-size:8px}.start{padding-bottom:18px}}
+/* Desktop result grows with its content instead of nesting a scrollbar. */
+@media(min-width:761px){
+ .stage.is-finished{height:auto;min-height:0;aspect-ratio:auto}
+ .stage.is-finished #game{display:none}
+ .stage.is-finished .finish{position:relative;inset:auto;overflow:visible;min-height:570px;padding:26px}
+}
+@media(max-width:760px){.finish h2{font-size:20px;line-height:1.5;white-space:nowrap}.finish h2 span{display:inline}}

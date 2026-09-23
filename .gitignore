@@ -5,3 +5,9 @@ artifacts/
 .DS_Store
 docs/notion-*.json
 docs/fal-submit.py
+
+docs/collection-art/*-job.json
+docs/collection-art/*-result.json
+docs/collection-art/*.png
+docs/collection-art/submit.py
+docs/collection-art/poll.py

@@ -4,6 +4,10 @@ const W=480,H=760,PAPER='#f9f4ee',GREEN='#3d6e5a';
 const publicURL=new URL('./',location.href).href;
 let prev=0,visualLane=1,animation=0,particles=[],toastTimer,sound=false,audio,cardBlob=null,cardURL=null;
 const hero=$('hero'),logo=new Image();logo.src='./assets/logo.png';
+const C=MoonCollection;let collection=[],collectionPersistent=true,currentReward=null,selectedRecord=null;
+try{const saved=C.load(localStorage);collection=saved.records;collectionPersistent=saved.persistent;}catch{collectionPersistent=false;}
+const cardImages=new Map();
+
 const stars=Array.from({length:48},(_,i)=>({x:(i*127.31)%W,y:(i*79.77)%480,r:i%5===0?1.8:.8}));
 function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2600);}
 function visible(id,yes){$(id).hidden=!yes;}
@@ -11,7 +15,7 @@ function begin(){$('stage').classList.remove('is-finished');E.start(state);visua
 function pause(){if(state.mode!=='playing')return;state.mode='paused';visible('pause-screen',true);$('resume').focus({preventScroll:true});}
 function resume(){if(state.mode!=='paused')return;state.mode='playing';visible('pause-screen',false);prev=performance.now();$('pause').focus({preventScroll:true});}
 function bestScore(){try{return Number(localStorage.getItem('leyan-moon-best-v1'))||0;}catch{return 0;}}
-function finish(){$('stage').classList.add('is-finished');['hud','tools','controls','journey','power'].forEach(id=>visible(id,false));visible('finish-screen',true);$('rank').textContent=E.rank(state.score);$('final-cakes').replaceChildren(document.createTextNode(state.cakes));const unit=document.createElement('small');unit.textContent='枚';$('final-cakes').append(unit);$('final-score').textContent=state.score;const best=Math.max(state.score,bestScore());try{localStorage.setItem('leyan-moon-best-v1',best);}catch{}$('best').textContent=`這台裝置的最高紀錄 ${best.toLocaleString()} 分`;$('footnote').textContent='把你的中秋祝福，分享給重要的人。';$('download').focus({preventScroll:true});beep(784,.15);setTimeout(()=>beep(1046,.22),170);}
+function finish(){unlockCard();$('stage').classList.add('is-finished');['hud','tools','controls','journey','power'].forEach(id=>visible(id,false));visible('finish-screen',true);$('rank').textContent=E.rank(state.score);$('final-cakes').replaceChildren(document.createTextNode(state.cakes));const unit=document.createElement('small');unit.textContent='枚';$('final-cakes').append(unit);$('final-score').textContent=state.score;const best=Math.max(state.score,bestScore());try{localStorage.setItem('leyan-moon-best-v1',best);}catch{}$('best').textContent=`這台裝置的最高紀錄 ${best.toLocaleString()} 分`;$('footnote').textContent='把你的中秋祝福，分享給重要的人。';$('download').textContent='↓ 下載這款圖卡';$('download').focus({preventScroll:true});beep(784,.15);setTimeout(()=>beep(1046,.22),170);}
 function beep(freq,duration=.09){if(!sound||!audio)return;try{const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}}
 function round(c,x,y,w,h,r,fill){c.fillStyle=fill;c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
 function ellipse(c,x,y,rx,ry,color){c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill();}
@@ -42,14 +46,49 @@ async function copyLink(){try{await navigator.clipboard.writeText(publicURL);toa
 async function shareLink(){if(navigator.share){try{await navigator.share({title:'樂衍月兔出任務｜中秋快樂',text:shareText(),url:publicURL});return;}catch(e){if(e.name==='AbortError')return;}}showLink();}
 document.querySelectorAll('[data-share]').forEach(b=>b.onclick=shareLink);document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=copyLink);$('close-link').onclick=()=>$('link-dialog').close();$('close-card').onclick=()=>$('card-dialog').close();
 async function readyImage(img){if(img.complete&&img.naturalWidth)return true;try{await img.decode();return true;}catch{return false;}}
-async function createCard(){
- await document.fonts.ready;
- const [hasHero,hasLogo]=await Promise.all([readyImage(hero),readyImage(logo)]);
+function updateAlbumCounts(){document.querySelectorAll('[data-album]').forEach(b=>b.textContent=`我的圖鑑 · ${collection.length} / 6`);}
+function unlockCard(){
+ currentReward=C.award(collection,state.score,state.cakes);collection=currentReward.records;
+ try{collectionPersistent=C.save(localStorage,collection);}catch{collectionPersistent=false;}
+ $('unlock-info').textContent=`${currentReward.isNew?'新卡入藏':'再次相遇'} · ${currentReward.card.name}  ${collection.length}/6${collection.length===6?' · 全套集滿！':''}`;
+ updateAlbumCounts();
+}
+function openAlbum(){
+ $('album-progress').textContent=collection.length===6?'六款全套集滿！謝謝你一路陪月兔團圓。':`已收集 ${collection.length} / 6 款 · 點已解鎖圖卡即可下載`;
+ $('album-note').textContent=collectionPersistent?'收藏只存在這台裝置，清除瀏覽器資料會重置。':'此瀏覽器目前無法保存收藏，關閉頁面後可能重置；請先下載喜歡的圖卡。';
+ const grid=$('album-grid');grid.replaceChildren();
+ C.CARDS.forEach((card,index)=>{const record=collection.find(r=>r.id===card.id);const tile=document.createElement('button');tile.className='album-tile'+(record?'':' locked');tile.type='button';tile.disabled=!record;tile.setAttribute('aria-label',record?`下載 ${card.name} 圖卡`:`第 ${index+1} 款尚未解鎖`);
+ if(record){const img=document.createElement('img');img.src=card.art;img.alt=card.name;img.loading='lazy';tile.append(img);}else{const cover=document.createElement('span');cover.className='locked-art';cover.textContent='☾';tile.append(cover);}
+ const label=document.createElement('strong');label.textContent=`${String(index+1).padStart(2,'0')} · ${record?card.name:'待你發現'}`;tile.append(label);const sub=document.createElement('small');sub.textContent=record?`${record.score} 分 · 查看圖卡`:'完成旅程解鎖';tile.append(sub);
+ if(record)tile.onclick=()=>showCard(record,false);grid.append(tile);});
+ $('album-play').textContent=collection.length===6?'再出發，刷新你的紀錄 →':'再出發，收集下一款 →';
+ if(!$('album-dialog').open)$('album-dialog').showModal();
+}
+async function getCardArt(card){let img=cardImages.get(card.id);if(!img){img=new Image();img.src=card.art;cardImages.set(card.id,img);}if(!await readyImage(img)){cardImages.delete(card.id);throw new Error('插畫尚未載入');}return img;}
+async function createCard(record){
+ await document.fonts.ready;const card=C.CARDS.find(c=>c.id===record.id);if(!card)throw new Error('找不到圖卡');
+ const [art,hasLogo]=await Promise.all([getCardArt(card),readyImage(logo)]);if(!hasLogo)throw new Error('品牌圖示尚未載入');
  const out=document.createElement('canvas');out.width=1080;out.height=1440;
- MoonCard.drawCard(out.getContext('2d'),{hero:hasHero?hero:null,logo:hasLogo?logo:null,score:state.score,cakes:state.cakes,rank:E.rank(state.score)});
+ MoonCard.drawCard(out.getContext('2d'),{hero:art,logo,score:record.score,cakes:record.cakes,rank:E.rank(record.score),card,index:C.CARDS.indexOf(card)});
  return new Promise((resolve,reject)=>out.toBlob(b=>b?resolve(b):reject(new Error('圖卡產生失敗')),'image/png'));
 }
-$('download').onclick=async()=>{const b=$('download');b.disabled=true;b.textContent='圖卡準備中…';try{if(!cardBlob)cardBlob=await createCard();if(!cardURL)cardURL=URL.createObjectURL(cardBlob);$('card-preview').src=cardURL;$('save-card').href=cardURL;const file=new File([cardBlob],'leyan-midautumn-card.png',{type:'image/png'});visible('share-card',!!navigator.canShare?.({files:[file]}));$('card-dialog').showModal();const a=document.createElement('a');a.href=cardURL;a.download='leyan-midautumn-card.png';a.click();}catch{toast('圖卡暫時無法產生，請再試一次；也可先分享連結。');}finally{b.disabled=false;b.textContent='↓ 下載成績圖卡';}};
-$('share-card').onclick=async()=>{if(!cardBlob)return;try{await navigator.share({files:[new File([cardBlob],'leyan-midautumn-card.png',{type:'image/png'})],title:'樂衍中秋祝福',text:shareText()});}catch(e){if(e.name!=='AbortError')toast('請使用儲存圖卡，再從相簿分享。');}};
+let cardPreparing=false;
+async function showCard(record,autoDownload){
+ if(cardPreparing)return;cardPreparing=true;const b=$('download');b.disabled=true;b.textContent='圖卡準備中…';
+ // Open feedback before loading so slow networks never feel like a dead button.
+ visible('card-error',false);visible('card-preview',false);visible('save-card',false);visible('share-card',false);
+ const card=C.CARDS.find(c=>c.id===record.id);$('card-title').textContent=card.name+' · 準備中';if(!$('card-dialog').open)$('card-dialog').showModal();
+ try{const blob=await createCard(record);cardBlob=blob;selectedRecord=record;if(cardURL)URL.revokeObjectURL(cardURL);cardURL=URL.createObjectURL(blob);const filename=`leyan-${record.id}-midautumn.png`;
+ $('card-preview').src=cardURL;$('card-preview').alt=`${card.name}｜樂衍中秋祝福`;$('save-card').href=cardURL;$('save-card').download=filename;$('card-title').textContent=card.name+' · 中秋收藏卡';
+ visible('card-preview',true);visible('save-card',true);const file=new File([blob],filename,{type:'image/png'});visible('share-card',!!navigator.canShare?.({files:[file]}));
+ if(autoDownload){const a=document.createElement('a');a.href=cardURL;a.download=filename;a.click();}
+ }catch{$('card-title').textContent='圖卡還在路上';$('card-error').textContent='圖片暫時無法載入，收藏已保留。請關閉後再試一次。';visible('card-error',true);}
+ finally{cardPreparing=false;b.disabled=false;b.textContent='↓ 下載這款圖卡';}
+}
+$('download').onclick=()=>{if(currentReward)showCard(currentReward.record,true);};
+$('share-card').onclick=async()=>{if(!cardBlob||!selectedRecord)return;const card=C.CARDS.find(c=>c.id===selectedRecord.id);try{await navigator.share({files:[new File([cardBlob],`leyan-${card.id}-midautumn.png`,{type:'image/png'})],title:'樂衍中秋祝福',text:`我收集到樂衍「${card.name}」中秋圖卡！祝你中秋快樂。`});}catch(e){if(e.name!=='AbortError'){$('card-error').textContent='請使用儲存圖卡，再從相簿分享。';visible('card-error',true);}}};
+document.querySelectorAll('[data-album]').forEach(b=>b.onclick=openAlbum);
+$('close-album').onclick=()=>$('album-dialog').close();$('album-play').onclick=()=>{$('album-dialog').close();begin();};
+updateAlbumCounts();
 hero.onerror=()=>{hero.hidden=true;hero.parentElement.style.background='radial-gradient(circle, #e9d39d 0%, #f9f4ee 68%)';};
 requestAnimationFrame(frame);
